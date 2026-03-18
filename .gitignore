@@ -11,19 +11,6 @@ Desktop.ini
 # IDE
 .vscode
 .idea
-*.swp
-*.swo
-*~
-.project
-.classpath
-.settings/
-
-# Node
-node_modules/
-npm-debug.log
-yarn-error.log
-package-lock.json
-yarn.lock
 
 # Build
 dist/
@@ -41,12 +28,8 @@ logs/
 *.temp
 .cache/
 
-# Testing
-.coverage/
-.nyc_output/
-
-# Claude Code
-.claude/
-
-# Metadata
+# Generated files
 _metadata/
+
+# Obsidian
+.obsidian/
