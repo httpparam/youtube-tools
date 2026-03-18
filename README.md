@@ -12,7 +12,7 @@ that's it
 
 ## what it does
 
-swaps the regular red logo for the premium one. also kills every ad—video ads, the ones in the middle, banners, sponsored stuff in the feed, whatever youtube throws at you
+swaps the regular red logo for the premium one. also kills every ad, video ads, the ones in the middle, banners, sponsored stuff in the feed, whatever youtube throws at you
 
 i basically copied how adguard blocks stuff (chrome's declarativerequest api) and added some css hiding and dom removal on top to catch anything that slips through
 
