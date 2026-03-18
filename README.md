@@ -1,64 +1,46 @@
-# YouTube Premium Experience
+# youtube premium experience
 
 
-<img src="logo.svg" alt="Premium" width="200">
+<img src="logo.svg" alt="premium" width="200">
 
-A simple browser extension that makes YouTube feel like Premium. Changes the logo and removes all ads.
-
----
-
-## What it does
-
-- Changes the regular YouTube logo to the Premium logo
-- Blocks all ads (pre-roll, mid-roll, banners, everything)
-- Uses AdGuard-style blocking rules at the network level
-- Works on desktop and mobile YouTube
+so i made this thing that changes the youtube logo to the premium one and also blocks all the ads
 
 ---
 
-## Install
+## how to install
 
-1. Open `chrome://extensions/`
-2. Turn on Developer mode (top right)
-3. Click Load unpacked
-4. Select this folder
+open chrome://extensions, turn on developer mode, click load unpacked, pick this folder
 
-Done. You now have Premium-looking YouTube with no ads.
+that's it
 
 ---
 
-## How it works
+## what it does
 
-Two things happen:
+swaps the regular red logo for the premium one. also kills every ad—video ads, the ones in the middle, banners, sponsored stuff in the feed, whatever youtube throws at you
 
-Logo replacement
-The extension finds the YouTube logo on the page and swaps it with the Premium SVG.
-
-Ad blocking
-Uses Chrome's declarativeNetRequest API (the same tech AdGuard uses) to block ads before they load. Combined with CSS hiding and DOM removal, ads don't stand a chance.
+i basically copied how adguard blocks stuff (chrome's declarativerequest api) and added some css hiding and dom removal on top to catch anything that slips through
 
 ---
 
-## Files
+## files
 
-```
-manifest.json   - Extension config
-background.js   - Service worker that registers blocking rules
-content.js      - Logo replacement + ad removal
-rules.json      - 30+ AdGuard-style blocking rules
-logo.svg        - The Premium logo
-```
+- manifest.json — the config
+- background.js — sets up the blocking rules
+- content.js — the actual logo swap and ad removal
+- rules.json — a bunch of blocking rules i stole from adguard
+- logo.svg — the premium logo
 
 ---
 
-## Legal stuff
+## legal
 
-This isn't affiliated with Google or YouTube. Just a personal project. Use at your own risk.
+this isn't from google or youtube, just something i made for fun. use it if you want but don't blame me if something breaks
 
-The YouTube name and logo are trademarks of Google LLC.
+the youtube logo is google's trademark obviously
 
 ---
 
-## License
+## license
 
-MIT
+mit
