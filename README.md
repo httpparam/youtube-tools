@@ -1,11 +1,8 @@
-# youtube premium experience
-
+# awesome youtube tools
 
 <img src="logo.svg" alt="premium" width="200">
 
 so i made this thing that changes the youtube logo to the premium one and also blocks all the ads
-
----
 
 ## how to install
 
@@ -13,34 +10,14 @@ open chrome://extensions, turn on developer mode, click load unpacked, pick this
 
 that's it
 
----
-
 ## what it does
 
 swaps the regular red logo for the premium one. also kills every ad—video ads, the ones in the middle, banners, sponsored stuff in the feed, whatever youtube throws at you
 
 i basically copied how adguard blocks stuff (chrome's declarativerequest api) and added some css hiding and dom removal on top to catch anything that slips through
 
----
-
-## files
-
-- manifest.json — the config
-- background.js — sets up the blocking rules
-- content.js — the actual logo swap and ad removal
-- rules.json — a bunch of blocking rules i stole from adguard
-- logo.svg — the premium logo
-
----
-
 ## legal
 
 this isn't from google or youtube, just something i made for fun. use it if you want but don't blame me if something breaks
 
 the youtube logo is google's trademark obviously
-
----
-
-## license
-
-mit

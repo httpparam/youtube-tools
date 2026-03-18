@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Premium Experience",
+  "name": "awesome youtube tools",
   "version": "2.0",
   "description": "Replaces the YouTube logo with the Premium logo AND blocks all YouTube ads - enjoy ad-free YouTube!",
   "permissions": [
