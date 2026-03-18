@@ -65,13 +65,7 @@
     }
   }
 
-  // ========================================
-  // YouTube Adblocker Module - NO ADS AT ALL
-  // ========================================
-
-  // CSS injection to hide ads immediately
   const adBlockCSS = `
-    /* Hide all video ads */
     .ytp-ad-player-overlay,
     .ytp-ad-overlay-slot,
     .ytp-ad-preview-text,
@@ -86,8 +80,6 @@
     .ad-interrupting,
     .ytp-ad-player-overlay-instream-info,
     .ytp-ad-module,
-
-    /* Hide feed ads */
     ytd-promoted-video-renderer,
     ytd-in-feed-ad-layout-renderer,
     ytd-display-ad-renderer,
@@ -97,23 +89,13 @@
     ytd-banner-promo-renderer,
     ytd-page-break-ad-layout-renderer,
     ytd-companion-ad-renderer,
-
-    /* Hide sponsored content */
     [aria-label*="Sponsored"],
     [aria-label*="Advertisement"],
     [aria-label*="Ad i"],
     [role="text"][aria-label*="Ad"],
-
-    /* Hide merch shelf ads */
     ytd-merch-shelf-renderer,
-
-    /* Hide comment ads */
     ytd-comment-sponsored-renderer,
-
-    /* Hide ad badges and watermarks */
     .ytp-paid-content-overlay,
-
-    /* Hide player ads */
     #player-ads,
     .ytp-ad-player,
     #advert {
@@ -126,7 +108,6 @@
     }
   `;
 
-  // Inject CSS
   function injectAdBlockCSS() {
     const style = document.createElement('style');
     style.textContent = adBlockCSS;
@@ -134,10 +115,8 @@
     (document.head || document.documentElement).appendChild(style);
   }
 
-  // Remove ad elements from DOM
   function removeAdElements() {
     const adSelectors = [
-      // Video player ads
       '.ytp-ad-player-overlay',
       '.ytp-ad-overlay-slot',
       '.ytp-ad-preview-text',
@@ -152,8 +131,6 @@
       '#player-ads',
       '.ytp-ad-player',
       '#advert',
-
-      // Feed/home ads
       'ytd-promoted-video-renderer',
       'ytd-in-feed-ad-layout-renderer',
       'ytd-display-ad-renderer',
@@ -165,8 +142,6 @@
       'ytd-companion-ad-renderer',
       'ytd-merch-shelf-renderer',
       'ytd-comment-sponsored-renderer',
-
-      // Sponsored labels and their containers
       '[aria-label*="Sponsored"]',
       '[aria-label*="Advertisement"]',
       '[aria-label*="Ad "]'
@@ -176,7 +151,6 @@
       try {
         const elements = document.querySelectorAll(selector);
         elements.forEach(el => {
-          // If it's a sponsored label, remove its container
           if (selector.includes('aria-label')) {
             const container = el.closest('ytd-grid-video-renderer, ytd-video-renderer, ytd-rich-item-renderer, ytd-compact-video-renderer, ytd-rich-grid-media');
             if (container) {
@@ -186,27 +160,20 @@
           el.remove();
         });
       } catch (e) {
-        // Ignore errors
       }
     });
   }
 
-  // Handle video ads - prevent them from playing
   function blockVideoAds() {
     const video = document.querySelector('video.html5-main-video');
     if (!video) return;
-
-    // Check if current video is an ad
     const isAd = document.querySelector('.ytp-ad-player-overlay, .ytp-ad-preview-text') ||
                  video.classList.contains('ad-showing') ||
                  video.parentElement.classList.contains('ad-showing');
 
     if (isAd) {
-      // Mute and speed through instantly
       video.muted = true;
       video.playbackRate = 16;
-
-      // Try to skip immediately
       const skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
       if (skipBtn) {
         skipBtn.click();
@@ -214,9 +181,7 @@
     }
   }
 
-  // Intercept and block ad requests
   function blockAdRequests() {
-    // Hook into fetch to block ad requests
     const originalFetch = window.fetch;
     window.fetch = function(...args) {
       const url = args[0];
@@ -245,26 +210,16 @@
       return originalXHR.apply(this, arguments);
     };
   }
-
-  // Main adblocker run function
   function runAdblocker() {
     removeAdElements();
     blockVideoAds();
   }
 
-  // Initialize adblocker
   function initAdblocker() {
-    // Inject CSS immediately
     injectAdBlockCSS();
-
-    // Block ad requests
     blockAdRequests();
-
-    // Run immediately and continuously
     runAdblocker();
     setInterval(runAdblocker, 50);
-
-    // Watch for DOM changes
     const adObserver = new MutationObserver(() => {
       runAdblocker();
     });
@@ -275,8 +230,6 @@
         subtree: true
       });
     }
-
-    // Watch for video ads specifically
     const video = document.querySelector('video.html5-main-video');
     if (video) {
       const videoObserver = new MutationObserver(() => {
@@ -287,13 +240,7 @@
         attributeFilter: ['class']
       });
     }
-
-    console.log('[YT Premium Experience] Adblock initialized - Ads will be completely removed');
   }
-
-  // ========================================
-  // Initialize Everything
-  // ========================================
 
   function init() {
     if (document.body) {
