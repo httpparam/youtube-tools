@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Premium Experience",
+  "version": "2.0",
+  "description": "Replaces the YouTube logo with the Premium logo AND blocks all YouTube ads - enjoy ad-free YouTube!",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.google.com/*",
+    "*://*.doubleclick.net/*",
+    "*://*.googlesyndication.com/*",
+    "*://*.googleadservices.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "adguard_rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "logo.svg",
+    "48": "logo.svg",
+    "128": "logo.svg"
+  }
+}
