@@ -6,8 +6,13 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "storage"
   ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
   "host_permissions": [
     "*://*.youtube.com/*",
     "*://*.google.com/*",
@@ -35,8 +40,8 @@
     }
   ],
   "icons": {
-    "16": "logo.svg",
-    "48": "logo.svg",
-    "128": "logo.svg"
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
   }
 }

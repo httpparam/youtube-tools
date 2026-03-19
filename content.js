@@ -1,6 +1,16 @@
 (function() {
   'use strict';
 
+  let logoEnabled = true;
+  let adBlockEnabled = true;
+  let pipEnabled = true;
+  let adBlockInterval = null;
+  let logoObserver = null;
+  let originalFetch = null;
+  let originalXHR = null;
+  let fetchHooked = false;
+  let xhrHooked = false;
+
   const youtubePremiumLogoSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 846 174" height="80px" width="391px" style="pointer-events: none;">
    <g transform="translate(0,0.36)">
      <g>
@@ -12,58 +22,6 @@
      </g>
    </g>
  </svg>`;
-
-  function replaceLogo() {
-    try {
-      const logoSelectors = [
-        '#logo-icon',
-        'ytd-logo#logo a',
-        '#logo',
-        'ytd-topbar-logo-renderer',
-        'yt-icon#logo-icon yt-icon-shape'
-      ];
-
-      logoSelectors.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(element => {
-          const svg = element.querySelector('svg');
-          if (svg && !element.dataset.premiumLogoReplaced) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(youtubePremiumLogoSVG, 'image/svg+xml');
-            const newSvg = doc.documentElement;
-            
-            newSvg.style.width = 'auto';
-            newSvg.style.height = '24px';
-            newSvg.style.maxWidth = '90px';
-            
-            element.dataset.premiumLogoReplaced = 'true';
-            svg.parentNode.replaceChild(newSvg, svg);
-          }
-        });
-      });
-    } catch (error) {
-      console.error('Error replacing logo:', error);
-    }
-  }
-
-  function init() {
-    if (document.body) {
-      replaceLogo();
-      
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.addedNodes.length) {
-            replaceLogo();
-          }
-        });
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: false
-      });
-    }
-  }
 
   const adBlockCSS = `
     .ytp-ad-player-overlay,
@@ -108,14 +66,134 @@
     }
   `;
 
+  const pipButtonCSS = `
+    .yt-pip-btn {
+      position: absolute;
+      bottom: 60px;
+      right: 12px;
+      width: 40px;
+      height: 40px;
+      background: rgba(33, 33, 33, 0.9);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s, background 0.2s;
+      z-index: 1000;
+    }
+
+    .ytp-right-controls:hover .yt-pip-btn,
+    .ytp-right-controls .yt-pip-btn:hover {
+      opacity: 1;
+    }
+
+    .yt-pip-btn:hover {
+      background: rgba(50, 50, 50, 0.95);
+      transform: scale(1.1);
+    }
+
+    .yt-pip-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: #fff;
+    }
+  `;
+
+  let pipButtonAdded = false;
+
+  function loadSettings() {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get(
+        { logoEnabled: true, adBlockEnabled: true, pipEnabled: true },
+        (settings) => {
+          logoEnabled = settings.logoEnabled;
+          adBlockEnabled = settings.adBlockEnabled;
+          pipEnabled = settings.pipEnabled;
+          resolve(settings);
+        }
+      );
+    });
+  }
+
+  function replaceLogo() {
+    if (!logoEnabled) return;
+
+    try {
+      const logoSelectors = [
+        '#logo-icon',
+        'ytd-logo#logo a',
+        '#logo',
+        'ytd-topbar-logo-renderer',
+        'yt-icon#logo-icon yt-icon-shape'
+      ];
+
+      logoSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+          const svg = element.querySelector('svg');
+          if (svg && !element.dataset.premiumLogoReplaced) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(youtubePremiumLogoSVG, 'image/svg+xml');
+            const newSvg = doc.documentElement;
+
+            newSvg.style.width = 'auto';
+            newSvg.style.height = '24px';
+            newSvg.style.maxWidth = '90px';
+
+            element.dataset.premiumLogoReplaced = 'true';
+            svg.parentNode.replaceChild(newSvg, svg);
+          }
+        });
+      });
+    } catch (error) {
+    }
+  }
+
+  function initLogoReplacer() {
+    if (logoObserver) {
+      logoObserver.disconnect();
+    }
+
+    if (!logoEnabled) return;
+
+    if (document.body) {
+      replaceLogo();
+
+      logoObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length) {
+            replaceLogo();
+          }
+        });
+      });
+
+      logoObserver.observe(document.body, {
+        childList: true,
+        subtree: false
+      });
+    }
+  }
+
   function injectAdBlockCSS() {
+    if (!adBlockEnabled) return;
     const style = document.createElement('style');
     style.textContent = adBlockCSS;
     style.id = 'yt-adblock-style';
     (document.head || document.documentElement).appendChild(style);
   }
 
+  function removeAdBlockCSS() {
+    const style = document.getElementById('yt-adblock-style');
+    if (style) {
+      style.remove();
+    }
+  }
+
   function removeAdElements() {
+    if (!adBlockEnabled) return;
     const adSelectors = [
       '.ytp-ad-player-overlay',
       '.ytp-ad-overlay-slot',
@@ -165,6 +243,7 @@
   }
 
   function blockVideoAds() {
+    if (!adBlockEnabled) return;
     const video = document.querySelector('video.html5-main-video');
     if (!video) return;
     const isAd = document.querySelector('.ytp-ad-player-overlay, .ytp-ad-preview-text') ||
@@ -181,45 +260,68 @@
     }
   }
 
-  function blockAdRequests() {
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-      const url = args[0];
-      if (typeof url === 'string') {
-        if (url.includes('doubleclick.net') ||
-            url.includes('googleadservices.com') ||
-            url.includes('googlesyndication.com') ||
-            url.includes('/ads/')) {
-          return Promise.reject('Blocked ad request');
-        }
-      }
-      return originalFetch.apply(this, args);
-    };
+  function hookAdRequests() {
+    if (!originalFetch) {
+      originalFetch = window.fetch;
+    }
+    if (!originalXHR) {
+      originalXHR = window.XMLHttpRequest.prototype.open;
+    }
 
-    // Hook into XMLHttpRequest
-    const originalXHR = window.XMLHttpRequest.prototype.open;
-    window.XMLHttpRequest.prototype.open = function(method, url) {
-      if (typeof url === 'string') {
-        if (url.includes('doubleclick.net') ||
-            url.includes('googleadservices.com') ||
-            url.includes('googlesyndication.com') ||
-            url.includes('/ads/')) {
-          throw new Error('Blocked ad request');
+    if (!fetchHooked) {
+      window.fetch = function(...args) {
+        const url = args[0];
+        if (adBlockEnabled && typeof url === 'string') {
+          if (url.includes('doubleclick.net') ||
+              url.includes('googleadservices.com') ||
+              url.includes('googlesyndication.com') ||
+              url.includes('/ads/')) {
+            return Promise.reject('Blocked ad request');
+          }
         }
-      }
-      return originalXHR.apply(this, arguments);
-    };
+        return originalFetch.apply(this, args);
+      };
+      fetchHooked = true;
+    }
+
+    if (!xhrHooked) {
+      window.XMLHttpRequest.prototype.open = function(method, url) {
+        if (adBlockEnabled && typeof url === 'string') {
+          if (url.includes('doubleclick.net') ||
+              url.includes('googleadservices.com') ||
+              url.includes('googlesyndication.com') ||
+              url.includes('/ads/')) {
+            throw new Error('Blocked ad request');
+          }
+        }
+        return originalXHR.apply(this, arguments);
+      };
+      xhrHooked = true;
+    }
   }
+
   function runAdblocker() {
     removeAdElements();
     blockVideoAds();
   }
 
   function initAdblocker() {
-    injectAdBlockCSS();
-    blockAdRequests();
+    if (adBlockInterval) {
+      clearInterval(adBlockInterval);
+    }
+
+    hookAdRequests();
+
+    removeAdBlockCSS();
+    if (adBlockEnabled) {
+      injectAdBlockCSS();
+    }
+
     runAdblocker();
-    setInterval(runAdblocker, 50);
+    if (adBlockEnabled) {
+      adBlockInterval = setInterval(runAdblocker, 50);
+    }
+
     const adObserver = new MutationObserver(() => {
       runAdblocker();
     });
@@ -230,6 +332,7 @@
         subtree: true
       });
     }
+
     const video = document.querySelector('video.html5-main-video');
     if (video) {
       const videoObserver = new MutationObserver(() => {
@@ -242,23 +345,106 @@
     }
   }
 
-  function init() {
-    if (document.body) {
-      replaceLogo();
-      initAdblocker();
+  function addPIPButton() {
+    if (!pipEnabled || pipButtonAdded) return;
 
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.addedNodes.length) {
-            replaceLogo();
-          }
+    const injectPIPStyles = () => {
+      if (!document.getElementById('yt-pip-styles')) {
+        const style = document.createElement('style');
+        style.id = 'yt-pip-styles';
+        style.textContent = pipButtonCSS;
+        document.head.appendChild(style);
+      }
+    };
+
+    const createPIPButton = () => {
+      const controlsContainer = document.querySelector('.ytp-right-controls');
+      if (!controlsContainer || pipButtonAdded) return;
+
+      const pipBtn = document.createElement('button');
+      pipBtn.className = 'ytp-button yt-pip-btn';
+      pipBtn.title = 'Picture-in-Picture';
+      pipBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 3H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2M9 3h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg>`;
+      pipBtn.addEventListener('click', openPIP);
+      controlsContainer.insertBefore(pipBtn, controlsContainer.firstChild);
+      pipButtonAdded = true;
+    };
+
+    injectPIPStyles();
+    createPIPButton();
+
+    const observer = new MutationObserver(() => {
+      if (!document.querySelector('.yt-pip-btn') && pipEnabled) {
+        pipButtonAdded = false;
+        createPIPButton();
+      }
+    });
+
+    const player = document.querySelector('#movie_player');
+    if (player) {
+      observer.observe(player, { childList: true, subtree: true });
+    }
+  }
+
+  function removePIPButton() {
+    const pipBtn = document.querySelector('.yt-pip-btn');
+    if (pipBtn) {
+      pipBtn.remove();
+      pipButtonAdded = false;
+    }
+  }
+
+  function openPIP() {
+    const video = document.querySelector('video.html5-main-video');
+    if (video && document.pictureInPictureEnabled) {
+      if (document.pictureInPictureElement) {
+        document.exitPictureInPicture();
+      } else {
+        video.requestPictureInPicture().catch(err => {
         });
-      });
+      }
+    }
+  }
 
-      observer.observe(document.body, {
-        childList: true,
-        subtree: false
-      });
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    switch (request.action) {
+      case 'toggleLogo':
+        logoEnabled = request.data.enabled;
+        initLogoReplacer();
+        sendResponse({ success: true });
+        break;
+
+      case 'toggleAds':
+        adBlockEnabled = request.data.enabled;
+        initAdblocker();
+        sendResponse({ success: true });
+        break;
+
+      case 'togglePip':
+        pipEnabled = request.data.enabled;
+        if (pipEnabled) {
+          addPIPButton();
+        } else {
+          removePIPButton();
+        }
+        sendResponse({ success: true });
+        break;
+
+      case 'openPip':
+        openPIP();
+        sendResponse({ success: true });
+        break;
+    }
+    return true;
+  });
+
+  async function init() {
+    await loadSettings();
+
+    if (document.body) {
+      initLogoReplacer();
+      initAdblocker();
+      addPIPButton();
     }
   }
 
