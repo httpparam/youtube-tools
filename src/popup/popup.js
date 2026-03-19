@@ -1,7 +1,8 @@
 const defaultSettings = {
   logoEnabled: true,
   adBlockEnabled: true,
-  pipEnabled: true
+  pipEnabled: true,
+  shortsAutoScrollEnabled: true
 };
 
 function loadSettings() {
@@ -44,6 +45,7 @@ async function init() {
   document.getElementById('toggle-logo').checked = settings.logoEnabled;
   document.getElementById('toggle-ads').checked = settings.adBlockEnabled;
   document.getElementById('toggle-pip').checked = settings.pipEnabled;
+  document.getElementById('toggle-shorts-scroll').checked = settings.shortsAutoScrollEnabled;
 
   document.getElementById('toggle-logo').addEventListener('change', async (e) => {
     const logoEnabled = e.target.checked;
@@ -71,6 +73,15 @@ async function init() {
     await saveSettings({ ...settings, pipEnabled });
     try {
       await sendMessageToTab('togglePip', { enabled: pipEnabled });
+    } catch (err) {
+    }
+  });
+
+  document.getElementById('toggle-shorts-scroll').addEventListener('change', async (e) => {
+    const shortsAutoScrollEnabled = e.target.checked;
+    await saveSettings({ ...settings, shortsAutoScrollEnabled });
+    try {
+      await sendMessageToTab('toggleShortsAutoScroll', { enabled: shortsAutoScrollEnabled });
     } catch (err) {
     }
   });

@@ -4,6 +4,7 @@
   let logoEnabled = true;
   let adBlockEnabled = true;
   let pipEnabled = true;
+  let shortsAutoScrollEnabled = true;
   let adBlockInterval = null;
   let logoObserver = null;
   let originalFetch = null;
@@ -107,11 +108,12 @@
   function loadSettings() {
     return new Promise((resolve) => {
       chrome.storage.sync.get(
-        { logoEnabled: true, adBlockEnabled: true, pipEnabled: true },
+        { logoEnabled: true, adBlockEnabled: true, pipEnabled: true, shortsAutoScrollEnabled: true },
         (settings) => {
           logoEnabled = settings.logoEnabled;
           adBlockEnabled = settings.adBlockEnabled;
           pipEnabled = settings.pipEnabled;
+          shortsAutoScrollEnabled = settings.shortsAutoScrollEnabled;
           resolve(settings);
         }
       );
@@ -406,6 +408,233 @@
     }
   }
 
+  let shortsScrollHandlerAttached = false;
+  let shortsObserver = null;
+  let lastUrl = location.href;
+  let hasScrolled = false;
+  let currentVideo = null;
+  let lastScrollTime = 0;
+  let isScrolling = false;
+  let scrollCheckInterval = null;
+
+  function onTimeUpdate() {
+    if (!shortsAutoScrollEnabled || !currentVideo || isScrolling) return;
+
+    // Make sure we're still on shorts
+    if (!window.location.pathname.includes('/shorts')) {
+      return;
+    }
+
+    // Check if video is near the end (within 0.3 seconds)
+    if (currentVideo.duration > 0 && currentVideo.currentTime >= currentVideo.duration - 0.3 && !hasScrolled) {
+      // Ensure loop is disabled
+      if (currentVideo.loop) {
+        currentVideo.loop = false;
+      }
+
+      hasScrolled = true;
+      isScrolling = true;
+
+      // Navigate to next short immediately
+      scrollToNextShort();
+
+      // Reset flags after navigation
+      setTimeout(() => {
+        hasScrolled = false;
+        isScrolling = false;
+      }, 1500);
+    }
+  }
+
+  // Polling function for background tabs
+  function checkVideoProgress() {
+    if (!shortsAutoScrollEnabled || !currentVideo || isScrolling) return;
+
+    // Make sure we're still on shorts
+    if (!window.location.pathname.includes('/shorts')) {
+      return;
+    }
+
+    // Check if video is near the end (within 0.3 seconds)
+    if (currentVideo.duration > 0 && currentVideo.currentTime >= currentVideo.duration - 0.3 && !hasScrolled) {
+      // Ensure loop is disabled
+      if (currentVideo.loop) {
+        currentVideo.loop = false;
+      }
+
+      hasScrolled = true;
+      isScrolling = true;
+
+      // Navigate to next short immediately
+      scrollToNextShort();
+
+      // Reset flags after navigation
+      setTimeout(() => {
+        hasScrolled = false;
+        isScrolling = false;
+      }, 1500);
+    }
+  }
+
+  // Handle visibility change (tab switching)
+  function handleVisibilityChange() {
+    if (!shortsAutoScrollEnabled || !window.location.pathname.includes('/shorts')) {
+      if (scrollCheckInterval) {
+        clearInterval(scrollCheckInterval);
+        scrollCheckInterval = null;
+      }
+      return;
+    }
+
+    if (document.hidden) {
+      // Tab is hidden, use polling
+      if (!scrollCheckInterval) {
+        scrollCheckInterval = setInterval(checkVideoProgress, 100);
+      }
+    } else {
+      // Tab is visible, use event-based approach
+      if (scrollCheckInterval) {
+        clearInterval(scrollCheckInterval);
+        scrollCheckInterval = null;
+      }
+    }
+  }
+
+  function initShortsAutoScroll() {
+    if (!shortsAutoScrollEnabled) {
+      removeShortsScrollHandler();
+      if (shortsObserver) {
+        shortsObserver.disconnect();
+        shortsObserver = null;
+      }
+      // Clean up polling and visibility listener
+      if (scrollCheckInterval) {
+        clearInterval(scrollCheckInterval);
+        scrollCheckInterval = null;
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      return;
+    }
+
+    const attachScrollHandler = () => {
+      // Only attach if we're on a shorts page
+      if (!window.location.pathname.includes('/shorts')) {
+        return;
+      }
+
+      // Only target shorts-specific video elements
+      const video = document.querySelector('ytd-shorts-player-view-model video, #shorts-player video');
+      if (!video) return;
+
+      // If it's the same video, don't re-attach
+      if (video === currentVideo && shortsScrollHandlerAttached) return;
+
+      // Clean up previous video
+      if (currentVideo && currentVideo !== video) {
+        currentVideo.removeEventListener('timeupdate', onTimeUpdate);
+        delete currentVideo.dataset.hasShortsAutoScroll;
+        // Reset scrolling state when switching to a new video
+        hasScrolled = false;
+        isScrolling = false;
+      }
+
+      currentVideo = video;
+
+      // Disable loop so the video can end
+      video.loop = false;
+
+      // Check if already has our listener (by checking a marker)
+      if (!video.dataset.hasShortsAutoScroll) {
+        video.addEventListener('timeupdate', onTimeUpdate);
+        video.dataset.hasShortsAutoScroll = 'true';
+      }
+
+      shortsScrollHandlerAttached = true;
+      hasScrolled = false;
+    };
+
+    if (window.location.pathname.includes('/shorts')) {
+      attachScrollHandler();
+    } else {
+      removeShortsScrollHandler();
+    }
+
+    // Add visibility change listener for background tab support
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // If tab is already hidden, start polling immediately
+    if (document.hidden) {
+      handleVisibilityChange();
+    }
+
+    if (shortsObserver) {
+      shortsObserver.disconnect();
+    }
+
+    shortsObserver = new MutationObserver(() => {
+      // Check for URL changes
+      const currentUrl = location.href;
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        // Reset scroll state when navigating to a new short
+        hasScrolled = false;
+        isScrolling = false;
+      }
+
+      if (!shortsAutoScrollEnabled) {
+        removeShortsScrollHandler();
+        return;
+      }
+      if (window.location.pathname.includes('/shorts')) {
+        attachScrollHandler();
+      } else {
+        removeShortsScrollHandler();
+      }
+    });
+
+    if (document.body) {
+      shortsObserver.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
+  function removeShortsScrollHandler() {
+    if (currentVideo) {
+      currentVideo.removeEventListener('timeupdate', onTimeUpdate);
+      delete currentVideo.dataset.hasShortsAutoScroll;
+    }
+    currentVideo = null;
+    shortsScrollHandlerAttached = false;
+    hasScrolled = false;
+    isScrolling = false;
+
+    // Clean up polling
+    if (scrollCheckInterval) {
+      clearInterval(scrollCheckInterval);
+      scrollCheckInterval = null;
+    }
+
+    // Remove visibility listener
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }
+
+  function scrollToNextShort() {
+    if (!shortsAutoScrollEnabled || !window.location.pathname.includes('/shorts')) {
+      return;
+    }
+
+    // Simulate ArrowDown keypress to navigate to next short
+    const downArrowEvent = new KeyboardEvent('keydown', {
+      key: 'ArrowDown',
+      code: 'ArrowDown',
+      keyCode: 40,
+      which: 40,
+      bubbles: true,
+      cancelable: true
+    });
+
+    document.dispatchEvent(downArrowEvent);
+  }
+
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.action) {
       case 'toggleLogo':
@@ -434,6 +663,12 @@
         openPIP();
         sendResponse({ success: true });
         break;
+
+      case 'toggleShortsAutoScroll':
+        shortsAutoScrollEnabled = request.data.enabled;
+        initShortsAutoScroll();
+        sendResponse({ success: true });
+        break;
     }
     return true;
   });
@@ -445,6 +680,7 @@
       initLogoReplacer();
       initAdblocker();
       addPIPButton();
+      initShortsAutoScroll();
     }
   }
 
