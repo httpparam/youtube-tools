@@ -1,4 +1,4 @@
-# <img src="logo.svg" alt="YouTube" width="24"> awesome youtube tools
+# <img src="icon.png" alt="YouTube" width="24"> awesome youtube tools
 
 so i made this thing that changes the youtube logo to the premium one and also blocks all the ads
 
