@@ -10,8 +10,8 @@
     "storage"
   ],
   "action": {
-    "default_popup": "popup.html",
-    "default_icon": "icon.png"
+    "default_popup": "src/popup/popup.html",
+    "default_icon": "src/icons/icon.png"
   },
   "host_permissions": [
     "*://*.youtube.com/*",
@@ -21,27 +21,27 @@
     "*://*.googleadservices.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/core/background.js"
   },
   "declarative_net_request": {
     "rule_resources": [
       {
         "id": "adguard_rules",
         "enabled": true,
-        "path": "rules.json"
+        "path": "src/core/rules.json"
       }
     ]
   },
   "content_scripts": [
     {
       "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
-      "js": ["content.js"],
+      "js": ["src/core/content.js"],
       "run_at": "document_idle"
     }
   ],
   "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
+    "16": "src/icons/icon.png",
+    "48": "src/icons/icon.png",
+    "128": "src/icons/icon.png"
   }
 }
