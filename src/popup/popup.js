@@ -49,7 +49,8 @@ async function init() {
 
   document.getElementById('toggle-logo').addEventListener('change', async (e) => {
     const logoEnabled = e.target.checked;
-    await saveSettings({ ...settings, logoEnabled });
+    settings.logoEnabled = logoEnabled;
+    await saveSettings(settings);
     try {
       await sendMessageToTab('toggleLogo', { enabled: logoEnabled });
     } catch (err) {
@@ -58,10 +59,9 @@ async function init() {
 
   document.getElementById('toggle-ads').addEventListener('change', async (e) => {
     const adBlockEnabled = e.target.checked;
-    await saveSettings({ ...settings, adBlockEnabled });
-
+    settings.adBlockEnabled = adBlockEnabled;
+    await saveSettings(settings);
     chrome.runtime.sendMessage({ action: 'toggleAds', data: { enabled: adBlockEnabled } });
-
     try {
       await sendMessageToTab('toggleAds', { enabled: adBlockEnabled });
     } catch (err) {
@@ -70,7 +70,8 @@ async function init() {
 
   document.getElementById('toggle-pip').addEventListener('change', async (e) => {
     const pipEnabled = e.target.checked;
-    await saveSettings({ ...settings, pipEnabled });
+    settings.pipEnabled = pipEnabled;
+    await saveSettings(settings);
     try {
       await sendMessageToTab('togglePip', { enabled: pipEnabled });
     } catch (err) {
@@ -79,7 +80,8 @@ async function init() {
 
   document.getElementById('toggle-shorts-scroll').addEventListener('change', async (e) => {
     const shortsAutoScrollEnabled = e.target.checked;
-    await saveSettings({ ...settings, shortsAutoScrollEnabled });
+    settings.shortsAutoScrollEnabled = shortsAutoScrollEnabled;
+    await saveSettings(settings);
     try {
       await sendMessageToTab('toggleShortsAutoScroll', { enabled: shortsAutoScrollEnabled });
     } catch (err) {
