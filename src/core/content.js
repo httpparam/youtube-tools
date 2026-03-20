@@ -636,41 +636,49 @@
   }
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    switch (request.action) {
-      case 'toggleLogo':
-        logoEnabled = request.data.enabled;
-        initLogoReplacer();
-        sendResponse({ success: true });
-        break;
+    try {
+      switch (request.action) {
+        case 'toggleLogo':
+          logoEnabled = request.data.enabled;
+          initLogoReplacer();
+          sendResponse({ success: true });
+          return true;
 
-      case 'toggleAds':
-        adBlockEnabled = request.data.enabled;
-        initAdblocker();
-        sendResponse({ success: true });
-        break;
+        case 'toggleAds':
+          adBlockEnabled = request.data.enabled;
+          initAdblocker();
+          sendResponse({ success: true });
+          return true;
 
-      case 'togglePip':
-        pipEnabled = request.data.enabled;
-        if (pipEnabled) {
-          addPIPButton();
-        } else {
-          removePIPButton();
-        }
-        sendResponse({ success: true });
-        break;
+        case 'togglePip':
+          pipEnabled = request.data.enabled;
+          if (pipEnabled) {
+            addPIPButton();
+          } else {
+            removePIPButton();
+          }
+          sendResponse({ success: true });
+          return true;
 
-      case 'openPip':
-        openPIP();
-        sendResponse({ success: true });
-        break;
+        case 'openPip':
+          openPIP();
+          sendResponse({ success: true });
+          return true;
 
-      case 'toggleShortsAutoScroll':
-        shortsAutoScrollEnabled = request.data.enabled;
-        initShortsAutoScroll();
-        sendResponse({ success: true });
-        break;
+        case 'toggleShortsAutoScroll':
+          shortsAutoScrollEnabled = request.data.enabled;
+          initShortsAutoScroll();
+          sendResponse({ success: true });
+          return true;
+
+        default:
+          sendResponse({ success: false, error: 'Unknown action' });
+          return false;
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: error.message });
+      return false;
     }
-    return true;
   });
 
   async function init() {
