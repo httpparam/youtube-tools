@@ -1,8 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "awesome youtube tools (Beta)",
-  "version": "0.0.1",
-  "version_name": "0.0.1 Beta",
+  "name": "awesome youtube tools",
+  "version": "1.0",
   "description": "Replaces the YouTube logo with the Premium logo AND blocks all YouTube ads - enjoy ad-free YouTube!",
   "permissions": [
     "activeTab",

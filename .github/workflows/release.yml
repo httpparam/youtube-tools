@@ -92,27 +92,7 @@ jobs:
 
           # Create release notes with simple placeholders
           cat > release_notes.md << 'EOF'
-          ## 🚀 Installation
-
-          Download the `youtube-tools-v__VERSION__.zip` file below. It contains:
-
-          - **Extension files** (manifest.json + src/) - for "Load unpacked" installation
-          - **CRX file** - for drag-and-drop installation
-
-          ### Option 1: Load Unpacked (Recommended)
-          1. Extract the ZIP to a folder
-          2. Open Chrome and navigate to `chrome://extensions/`
-          3. Enable "Developer mode" in the top right
-          4. Click "Load unpacked" and select the extracted folder
-
-          ### Option 2: CRX File
-          1. Extract the ZIP to access the CRX file inside
-          2. Drag and drop the `youtube-tools-v__VERSION__.crx` file into `chrome://extensions/`
-          3. Confirm installation when prompted
-
-          ---
-
-          ## 📝 What's Changed
+          Download the ZIP below and extract it. Load the unpacked folder in Chrome at `chrome://extensions/`
 
           __CHANGELOG__
           EOF
@@ -132,12 +112,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }} Beta
+          name: v${{ steps.version.outputs.version }}
           body_path: release_notes.md
           files: |
             releases/youtube-tools-v${{ steps.version.outputs.version }}.zip
           draft: false
-          prerelease: true
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
