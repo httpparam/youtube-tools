@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "awesome youtube tools",
-  "version": "2.0",
+  "version": "2.0.1",
   "description": "Replaces the YouTube logo with the Premium logo AND blocks all YouTube ads - enjoy ad-free YouTube!",
   "permissions": [
     "activeTab",
@@ -34,8 +34,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
-      "js": ["src/core/content.js"],
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://m.youtube.com/*"
+      ],
+      "js": [
+        "src/core/content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
