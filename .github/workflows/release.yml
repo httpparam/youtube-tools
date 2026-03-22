@@ -68,8 +68,8 @@ jobs:
           crx pack "$TEMP_DIR" -o "$CRX_NAME"
           rm -rf "$TEMP_DIR"
 
-          # Create ZIP containing both extension files and CRX
-          zip -r "releases/$ZIP_NAME" manifest.json src/ "$CRX_NAME"
+          # Create ZIP containing only the CRX file
+          zip "releases/$ZIP_NAME" "$CRX_NAME"
           rm -f "$CRX_NAME"
 
       - name: Generate release notes
@@ -92,7 +92,7 @@ jobs:
 
           # Create release notes with simple placeholders
           cat > release_notes.md << 'EOF'
-          Download the ZIP below and extract it. Load the unpacked folder in Chrome at `chrome://extensions/`
+          Download the ZIP below, extract the CRX file, and drag it into `chrome://extensions/`
 
           __CHANGELOG__
           EOF
