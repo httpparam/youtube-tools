@@ -132,12 +132,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }} Beta
           body_path: release_notes.md
           files: |
             releases/youtube-tools-v${{ steps.version.outputs.version }}.zip
           draft: false
-          prerelease: false
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
