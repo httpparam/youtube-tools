@@ -114,7 +114,7 @@ jobs:
           EOF
 
           # Replace placeholders using awk (handles special characters better than sed)
-          awk -v ver="$VERSION" -v log="$LOG" '{ gsub(/__VERSION__/, ver); gsub(/__CHANGELOG__/, log); print }' release_notes.md > release_notes_temp.md
+          awk -v ver="$VERSION" -v changelog="$LOG" '{ gsub(/__VERSION__/, ver); gsub(/__CHANGELOG__/, changelog); print }' release_notes.md > release_notes_temp.md
           mv release_notes_temp.md release_notes.md
 
           # Handle empty changelog
