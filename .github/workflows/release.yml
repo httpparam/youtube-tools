@@ -90,19 +90,19 @@ jobs:
             LOG=$(git log --pretty=format:"- %s" --no-merges "$PREV_TAG..HEAD")
           fi
 
-          # Create release notes
+          # Create release notes with simple placeholders
           cat > release_notes.md << 'EOF'
           ## 🚀 Installation
 
           ### Option 1: Load Unpacked (Recommended)
-          1. Download the `youtube-tools-v{VERSION}.zip` file below
+          1. Download the `youtube-tools-v__VERSION__.zip` file below
           2. Extract the ZIP to a folder
           3. Open Chrome and navigate to `chrome://extensions/`
           4. Enable "Developer mode" in the top right
           5. Click "Load unpacked" and select the extracted folder
 
           ### Option 2: CRX File
-          1. Download the `youtube-tools-v{VERSION}.crx` file below
+          1. Download the `youtube-tools-v__VERSION__.crx` file below
           2. Drag and drop the CRX file into `chrome://extensions/`
           3. Confirm installation when prompted
 
@@ -110,16 +110,17 @@ jobs:
 
           ## 📝 What's Changed
 
-          {CHANGELOG}
+          __CHANGELOG__
           EOF
 
-          # Replace placeholders
-          sed -i "s/{VERSION}/$VERSION/g" release_notes.md
-          sed -i "s|{CHANGELOG}|$LOG|g" release_notes.md
+          # Replace placeholders using awk (handles special characters better than sed)
+          awk -v ver="$VERSION" -v log="$LOG" '{ gsub(/__VERSION__/, ver); gsub(/__CHANGELOG__/, log); print }' release_notes.md > release_notes_temp.md
+          mv release_notes_temp.md release_notes.md
 
           # Handle empty changelog
           if [ -z "$LOG" ]; then
-            sed -i 's/## 📝 What.s Changed/## 📝 What'"'"'s Changed\n\nInitial release or no changes recorded./g' release_notes.md
+            awk '{ print } /## 📝 What/{print "\nInitial release or no changes recorded."}' release_notes.md > release_notes_temp.md
+            mv release_notes_temp.md release_notes.md
           fi
 
       - name: Create GitHub Release
