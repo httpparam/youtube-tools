@@ -16,8 +16,11 @@ Desktop.ini
 dist/
 build/
 *.crx
-*.zip
 *.pem
+
+# Allow release artifacts
+!releases/*.zip
+!releases/*.crx
 
 # Logs
 *.log

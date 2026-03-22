@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'manifest.json'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from manifest.json
+        id: version
+        run: |
+          VERSION=$(jq -r '.version' manifest.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="v$VERSION"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag $TAG already exists, skipping release"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag $TAG does not exist, proceeding with release"
+          fi
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="v$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Install crx tool
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          npm install -g crx
+
+      - name: Package extension
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ZIP_NAME="youtube-tools-v$VERSION.zip"
+          CRX_NAME="youtube-tools-v$VERSION.crx"
+          mkdir -p releases
+
+          # Create ZIP for manual loading
+          zip -r "releases/$ZIP_NAME" manifest.json src/
+
+          # Create CRX for Chrome Web Store direct install
+          # Create a temporary directory for packaging
+          TEMP_DIR=$(mktemp -d)
+          cp -r manifest.json src/ "$TEMP_DIR/"
+          crx pack "$TEMP_DIR" -o "releases/$CRX_NAME"
+          rm -rf "$TEMP_DIR"
+
+      - name: Generate release notes
+        if: steps.check_tag.outputs.exists == 'false'
+        id: release_notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="v$VERSION"
+
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            # No previous tag, get all commits
+            LOG=$(git log --pretty=format:"- %s" --no-merges)
+          else
+            # Get commits since previous tag
+            LOG=$(git log --pretty=format:"- %s" --no-merges "$PREV_TAG..HEAD")
+          fi
+
+          # Create release notes
+          cat > release_notes.md << 'EOF'
+          ## 🚀 Installation
+
+          ### Option 1: Load Unpacked (Recommended)
+          1. Download the `youtube-tools-v{VERSION}.zip` file below
+          2. Extract the ZIP to a folder
+          3. Open Chrome and navigate to `chrome://extensions/`
+          4. Enable "Developer mode" in the top right
+          5. Click "Load unpacked" and select the extracted folder
+
+          ### Option 2: CRX File
+          1. Download the `youtube-tools-v{VERSION}.crx` file below
+          2. Drag and drop the CRX file into `chrome://extensions/`
+          3. Confirm installation when prompted
+
+          ---
+
+          ## 📝 What's Changed
+
+          {CHANGELOG}
+          EOF
+
+          # Replace placeholders
+          sed -i "s/{VERSION}/$VERSION/g" release_notes.md
+          sed -i "s|{CHANGELOG}|$LOG|g" release_notes.md
+
+          # Handle empty changelog
+          if [ -z "$LOG" ]; then
+            sed -i 's/## 📝 What.s Changed/## 📝 What'"'"'s Changed\n\nInitial release or no changes recorded./g' release_notes.md
+          fi
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body_path: release_notes.md
+          files: |
+            releases/youtube-tools-v${{ steps.version.outputs.version }}.zip
+            releases/youtube-tools-v${{ steps.version.outputs.version }}.crx
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit ZIP to repository
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add releases/youtube-tools-v$VERSION.zip
+          git commit -m "Add release artifact for v$VERSION" || echo "No changes to commit"
+          git push origin main
