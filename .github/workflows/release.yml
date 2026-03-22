@@ -62,15 +62,15 @@ jobs:
           CRX_NAME="youtube-tools-v$VERSION.crx"
           mkdir -p releases
 
-          # Create ZIP for manual loading
-          zip -r "releases/$ZIP_NAME" manifest.json src/
-
-          # Create CRX for Chrome Web Store direct install
-          # Create a temporary directory for packaging
+          # Create CRX file
           TEMP_DIR=$(mktemp -d)
           cp -r manifest.json src/ "$TEMP_DIR/"
-          crx pack "$TEMP_DIR" -o "releases/$CRX_NAME"
+          crx pack "$TEMP_DIR" -o "$CRX_NAME"
           rm -rf "$TEMP_DIR"
+
+          # Create ZIP containing both extension files and CRX
+          zip -r "releases/$ZIP_NAME" manifest.json src/ "$CRX_NAME"
+          rm -f "$CRX_NAME"
 
       - name: Generate release notes
         if: steps.check_tag.outputs.exists == 'false'
@@ -94,16 +94,20 @@ jobs:
           cat > release_notes.md << 'EOF'
           ## 🚀 Installation
 
+          Download the `youtube-tools-v__VERSION__.zip` file below. It contains:
+
+          - **Extension files** (manifest.json + src/) - for "Load unpacked" installation
+          - **CRX file** - for drag-and-drop installation
+
           ### Option 1: Load Unpacked (Recommended)
-          1. Download the `youtube-tools-v__VERSION__.zip` file below
-          2. Extract the ZIP to a folder
-          3. Open Chrome and navigate to `chrome://extensions/`
-          4. Enable "Developer mode" in the top right
-          5. Click "Load unpacked" and select the extracted folder
+          1. Extract the ZIP to a folder
+          2. Open Chrome and navigate to `chrome://extensions/`
+          3. Enable "Developer mode" in the top right
+          4. Click "Load unpacked" and select the extracted folder
 
           ### Option 2: CRX File
-          1. Download the `youtube-tools-v__VERSION__.crx` file below
-          2. Drag and drop the CRX file into `chrome://extensions/`
+          1. Extract the ZIP to access the CRX file inside
+          2. Drag and drop the `youtube-tools-v__VERSION__.crx` file into `chrome://extensions/`
           3. Confirm installation when prompted
 
           ---
@@ -132,7 +136,6 @@ jobs:
           body_path: release_notes.md
           files: |
             releases/youtube-tools-v${{ steps.version.outputs.version }}.zip
-            releases/youtube-tools-v${{ steps.version.outputs.version }}.crx
           draft: false
           prerelease: false
         env:
